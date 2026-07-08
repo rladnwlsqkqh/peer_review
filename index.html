@@ -255,15 +255,30 @@
     });
   }
 
+  // ★★★ 여기에 앱스크립트 웹 앱 URL을 붙여넣으세요 ★★★
+  // (앱스크립트 편집기 → 배포 → 배포 관리 → "웹 앱" URL, /exec로 끝나는 주소)
+  var APP_URL = 'https://script.google.com/macros/s/AKfycbxxG5x1V_OFSi8tKFXg812Kjw44OcTyFGmYP77tHWmIp_OfsEFXI-d4BWSdvyzKHY7J/exec';
+
+  // 서버 호출: 깃허브 페이지처럼 외부 사이트에서도 동작하도록 fetch를 사용합니다.
+  // Content-Type을 text/plain으로 보내는 이유: 앱스크립트가 처리 못 하는
+  // 사전 요청(preflight)을 피하기 위한 표준적인 방법입니다.
   function call(fnName, args, onSuccess, msgElId) {
-    google.script.run
-      .withSuccessHandler(function (res) {
-        if (!res.ok && msgElId) { setMsg(msgElId, res.message || '오류가 발생했습니다.', true); }
+    fetch(APP_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ fn: fnName, args: args })
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error('응답 오류 (' + r.status + ')');
+        return r.json();
+      })
+      .then(function (res) {
+        if (res && !res.ok && msgElId) { setMsg(msgElId, res.message || '오류가 발생했습니다.', true); }
         onSuccess(res);
       })
-      .withFailureHandler(function (err) {
-        if (msgElId) setMsg(msgElId, '서버 오류: ' + err.message, true);
-      })[fnName].apply(null, args);
+      .catch(function (err) {
+        if (msgElId) setMsg(msgElId, '서버 연결 실패: ' + err.message, true);
+      });
   }
 
   /* ---------- 선생님 인증 ---------- */
@@ -455,19 +470,14 @@
       document.getElementById('editor-title').textContent + ' - 결과';
     container.innerHTML = '<p class="sub">결과를 불러오는 중...</p>';
     show('view-results');
-    google.script.run
-      .withSuccessHandler(function (res) {
-        if (!res || !res.ok) {
-          container.innerHTML = '<div class="msg error">결과를 불러오지 못했습니다: ' +
-            escapeHtml((res && res.message) || '알 수 없는 오류') + '</div>';
-          return;
-        }
-        renderResults(res, container);
-      })
-      .withFailureHandler(function (err) {
-        container.innerHTML = '<div class="msg error">서버 오류: ' + escapeHtml(err.message) + '</div>';
-      })
-      .getSessionResults(state.teacher.teacherId, state.currentSessionId);
+    call('getSessionResults', [state.teacher.teacherId, state.currentSessionId], function (res) {
+      if (!res || !res.ok) {
+        container.innerHTML = '<div class="msg error">결과를 불러오지 못했습니다: ' +
+          escapeHtml((res && res.message) || '알 수 없는 오류') + '</div>';
+        return;
+      }
+      renderResults(res, container);
+    }, 'results-table');
   }
 
   function renderResults(res, container) {
