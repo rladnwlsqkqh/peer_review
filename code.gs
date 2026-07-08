@@ -23,6 +23,48 @@ function doGet(e) {
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
+/* ---------- 외부(깃허브 페이지 등)에서 오는 요청을 받는 API 창구 ---------- */
+
+// 외부에서 호출을 허용할 함수 목록 (여기 없는 함수는 절대 실행되지 않음)
+function getApiFunctions_() {
+  return {
+    signUpTeacher: signUpTeacher,
+    loginTeacher: loginTeacher,
+    createSession: createSession,
+    getTeacherSessions: getTeacherSessions,
+    getSessionDetail: getSessionDetail,
+    setSessionStatus: setSessionStatus,
+    saveRoster: saveRoster,
+    saveGroups: saveGroups,
+    saveQuestions: saveQuestions,
+    getMyAssignedSessions: getMyAssignedSessions,
+    loginStudent: loginStudent,
+    getGroupMembers: getGroupMembers,
+    submitEvaluation: submitEvaluation,
+    getSessionResults: getSessionResults
+  };
+}
+
+// 깃허브에 올린 index.html이 fetch(POST)로 {fn: 함수이름, args: [인자들]}를
+// 보내면, 해당 함수를 실행하고 결과를 JSON으로 돌려줍니다.
+function doPost(e) {
+  initializeSheets_();
+  var res;
+  try {
+    var req = JSON.parse(e.postData.contents);
+    var fn = getApiFunctions_()[req.fn];
+    if (!fn) {
+      res = { ok: false, message: '알 수 없는 요청입니다: ' + req.fn };
+    } else {
+      res = fn.apply(null, req.args || []);
+    }
+  } catch (err) {
+    res = { ok: false, message: '서버 오류: ' + err.message };
+  }
+  return ContentService.createTextOutput(JSON.stringify(res))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
 // Apps Script 편집기에서 이 함수를 한 번 실행하면 시트가 만들어지고 권한 승인 창이 뜹니다.
 function setup() {
   initializeSheets_();
