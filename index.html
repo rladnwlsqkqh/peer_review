@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif;
+      background: #f4f6f9; margin: 0; padding: 24px; color: #222;
+    }
+    .card {
+      max-width: 640px; margin: 0 auto 16px; background: #fff; border-radius: 12px;
+      padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+    h1 { font-size: 22px; margin-top: 0; }
+    h2 { font-size: 18px; }
+    .sub { color: #666; font-size: 14px; margin-bottom: 16px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    button {
+      background: #3b6ef5; color: #fff; border: none; border-radius: 8px;
+      padding: 10px 16px; font-size: 15px; cursor: pointer; margin: 4px 4px 4px 0;
+    }
+    button.secondary { background: #eaedf3; color: #333; }
+    button.danger { background: #e5484d; }
+    button:disabled { opacity: 0.5; cursor: default; }
+    input[type=text], input[type=password], input[type=number], textarea, select {
+      width: 100%; padding: 9px 10px; border: 1px solid #ccc; border-radius: 6px;
+      font-size: 15px; margin-bottom: 10px; font-family: inherit;
+    }
+    label { font-size: 14px; font-weight: bold; display: block; margin-bottom: 4px; }
+    textarea { resize: vertical; min-height: 90px; }
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+    .msg { font-size: 14px; margin: 8px 0; padding: 8px 10px; border-radius: 6px; }
+    .msg.error { background: #fdeaea; color: #c0322c; }
+    .msg.ok { background: #e8f6ec; color: #1f8a3d; }
+    .tab-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .tab-bar button { flex: 1; }
+    .list-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #eee;
+    }
+    .list-item:last-child { border-bottom: none; }
+    .tag {
+      display: inline-block; font-size: 12px; padding: 2px 8px; border-radius: 10px;
+      background: #eef1f8; color: #445; margin-left: 6px;
+    }
+    .tag.open { background: #e8f6ec; color: #1f8a3d; }
+    .tag.closed { background: #fdeaea; color: #c0322c; }
+    .code-box {
+      font-size: 26px; letter-spacing: 4px; font-weight: bold; text-align: center;
+      background: #eef1f8; border-radius: 8px; padding: 12px; margin: 10px 0;
+    }
+    .q-row { border: 1px solid #eee; border-radius: 8px; padding: 10px; margin-bottom: 8px; }
+    .student-row {
+      display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f0f0f0;
+    }
+    .student-row span.name { flex: 0 0 auto; white-space: nowrap; min-width: 96px; }
+    .student-row input { flex: 1 1 auto; min-width: 0; }
+    .member-card {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 12px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 8px; cursor: pointer;
+    }
+    .member-card:hover { background: #f8f9fc; }
+    .member-card .done { color: #1f8a3d; font-size: 13px; }
+    .member-card .pending { color: #c0322c; font-size: 13px; }
+    .score-options { display: flex; gap: 6px; margin-bottom: 10px; }
+    .score-options label {
+      flex: 1; text-align: center; border: 1px solid #ccc; border-radius: 6px; padding: 8px 0;
+      font-weight: normal; cursor: pointer;
+    }
+    .score-options input { display: none; }
+    .score-options input:checked + span { font-weight: bold; }
+    .score-options label.checked { background: #3b6ef5; color: #fff; border-color: #3b6ef5; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px 6px; text-align: left; vertical-align: top; }
+    .link-btn { background: none; border: none; color: #3b6ef5; padding: 0; text-decoration: underline; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <!-- 첫 화면 -->
+  <div class="view active" id="view-landing">
+    <div class="card">
+      <h1>동료평가</h1>
+      <p class="sub">모둠 활동 동료평가를 온라인으로 진행해보세요.</p>
+      <button onclick="show('view-teacher-auth')">선생님으로 시작하기</button>
+      <button class="secondary" onclick="openStudentLogin()">학생으로 참여하기</button>
+    </div>
+  </div>
+
+  <!-- 선생님 로그인/회원가입 -->
+  <div class="view" id="view-teacher-auth">
+    <div class="card">
+      <div class="tab-bar">
+        <button id="tab-login" onclick="switchTeacherTab('login')">로그인</button>
+        <button id="tab-signup" class="secondary" onclick="switchTeacherTab('signup')">회원가입</button>
+      </div>
+
+      <div id="teacher-login-box">
+        <label>비밀번호</label>
+        <input type="password" id="login-password" placeholder="비밀번호만 입력하세요">
+        <button onclick="doTeacherLogin()">로그인</button>
+      </div>
+
+      <div id="teacher-signup-box" class="hidden">
+        <label>이름</label>
+        <input type="text" id="signup-name" placeholder="예: 김선생">
+        <label>담당 과목</label>
+        <input type="text" id="signup-subject" placeholder="예: 국어">
+        <label>비밀번호 (4자 이상, 로그인 시 이 비밀번호만 사용)</label>
+        <input type="password" id="signup-password" placeholder="다른 선생님과 겹치지 않게 설정">
+        <button onclick="doTeacherSignup()">회원가입</button>
+      </div>
+
+      <div id="teacher-auth-msg"></div>
+      <button class="secondary" onclick="show('view-landing')">뒤로가기</button>
+    </div>
+  </div>
+
+  <!-- 선생님 대시보드 -->
+  <div class="view" id="view-teacher-dashboard">
+    <div class="card">
+      <h1 id="dash-title">대시보드</h1>
+      <p class="sub" id="dash-sub"></p>
+      <button onclick="openNewSession()">+ 새 동료평가 만들기</button>
+      <button class="secondary" onclick="logoutTeacher()">로그아웃</button>
+      <div id="new-session-box" class="hidden" style="margin-top:12px;">
+        <label>평가 제목</label>
+        <input type="text" id="new-session-title" placeholder="예: 3단원 모둠활동 동료평가">
+        <button onclick="createNewSession()">만들기</button>
+      </div>
+      <div id="dash-msg"></div>
+    </div>
+    <div class="card">
+      <h2>내 평가 목록</h2>
+      <div id="session-list"></div>
+    </div>
+  </div>
+
+  <!-- 세션(평가) 편집 화면 -->
+  <div class="view" id="view-session-editor">
+    <div class="card">
+      <button class="secondary" onclick="backToDashboard()">← 목록으로</button>
+      <h1 id="editor-title"></h1>
+      <p class="sub" id="editor-status-hint"></p>
+      <div class="row">
+        <button id="btn-open" onclick="changeStatus('open')">평가 열기</button>
+        <button id="btn-close" class="secondary" onclick="changeStatus('closed')">평가 마감</button>
+        <button class="secondary" onclick="viewResults()">결과 보기</button>
+      </div>
+      <div id="editor-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>1. 학생 명단</h2>
+      <p class="sub">한 줄에 한 명씩, "학번,이름" 형식으로 입력하세요. 다시 저장하면 기존 명단을 덮어씁니다 (모둠 정보는 유지됩니다).</p>
+      <textarea id="roster-text" placeholder="20101,홍길동&#10;20102,김철수&#10;20103,이영희"></textarea>
+      <button onclick="saveRosterClick()">명단 저장</button>
+      <div id="roster-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. 모둠 편성</h2>
+      <p class="sub">학생마다 모둠 이름을 적어주세요 (예: 1모둠). 같은 모둠 이름끼리 서로 평가할 수 있습니다.</p>
+      <div id="group-list"></div>
+      <button onclick="saveGroupsClick()">모둠 저장</button>
+      <div id="group-msg"></div>
+    </div>
+
+    <div class="card">
+      <h2>3. 평가 문항</h2>
+      <div id="question-lock-msg" class="hidden msg error">이미 제출된 평가가 있어 문항을 수정할 수 없습니다. 문항을 바꾸려면 새 평가를 만들어주세요.</div>
+      <div id="question-list"></div>
+      <button class="secondary" id="btn-add-question" onclick="addQuestionRow()">+ 문항 추가</button>
+      <button id="btn-save-questions" onclick="saveQuestionsClick()">문항 저장</button>
+      <div id="question-msg"></div>
+    </div>
+  </div>
+
+  <!-- 결과 보기 -->
+  <div class="view" id="view-results">
+    <div class="card">
+      <button class="secondary" onclick="backToEditor()">← 평가로 돌아가기</button>
+      <button onclick="exportToExcel()">엑셀로 내보내기</button>
+      <h1 id="results-title">결과</h1>
+      <div id="results-table"></div>
+    </div>
+  </div>
+
+  <!-- 학생 로그인 -->
+  <div class="view" id="view-student-login">
+    <div class="card">
+      <h1>학생 참여</h1>
+      <label>학번</label>
+      <input type="text" id="student-id" placeholder="예: 20101">
+      <label>이름</label>
+      <input type="text" id="student-name" placeholder="예: 홍길동">
+      <button onclick="findMySessions()">내 평가 찾기</button>
+      <div id="student-login-msg"></div>
+      <div id="my-session-list"></div>
+      <button class="secondary" onclick="show('view-landing')">뒤로가기</button>
+    </div>
+  </div>
+
+  <!-- 학생 평가 화면 -->
+  <div class="view" id="view-student-eval">
+    <div class="card">
+      <h1 id="eval-title"></h1>
+      <p class="sub" id="eval-sub"></p>
+      <button class="secondary" onclick="logoutStudent()">나가기</button>
+    </div>
+    <div class="card">
+      <h2>우리 모둠원 평가하기</h2>
+      <div id="member-list"></div>
+      <div id="no-group-msg" class="hidden msg error">아직 선생님이 모둠을 편성하지 않았습니다. 잠시 후 다시 접속해주세요.</div>
+    </div>
+    <div class="card hidden" id="eval-form-card">
+      <h2 id="eval-form-target"></h2>
+      <div id="eval-form-questions"></div>
+      <button onclick="submitEvalClick()">제출하기</button>
+      <button class="secondary" onclick="closeEvalForm()">취소</button>
+      <div id="eval-form-msg"></div>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+  var state = {
+    teacher: null,       // {teacherId, name, subject}
+    currentSessionId: null,
+    currentQuestions: [],
+    student: null,       // {sessionId, studentId, name, groupName, questions, title}
+    evalTargetId: null,
+    lastResults: null    // 엑셀 내보내기용으로 마지막 결과 저장
+  };
+
+  function show(id) {
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+    document.getElementById(id).classList.add('active');
+  }
+
+  function setMsg(elId, text, isError) {
+    var el = document.getElementById(elId);
+    if (!text) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="msg ' + (isError ? 'error' : 'ok') + '">' + escapeHtml(text) + '</div>';
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  function call(fnName, args, onSuccess, msgElId) {
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (!res.ok && msgElId) { setMsg(msgElId, res.message || '오류가 발생했습니다.', true); }
+        onSuccess(res);
+      })
+      .withFailureHandler(function (err) {
+        if (msgElId) setMsg(msgElId, '서버 오류: ' + err.message, true);
+      })[fnName].apply(null, args);
+  }
+
+  /* ---------- 선생님 인증 ---------- */
+
+  function switchTeacherTab(tab) {
+    document.getElementById('teacher-login-box').classList.toggle('hidden', tab !== 'login');
+    document.getElementById('teacher-signup-box').classList.toggle('hidden', tab !== 'signup');
+    document.getElementById('tab-login').className = tab === 'login' ? '' : 'secondary';
+    document.getElementById('tab-signup').className = tab === 'signup' ? '' : 'secondary';
+    setMsg('teacher-auth-msg', '');
+  }
+
+  function doTeacherLogin() {
+    var password = document.getElementById('login-password').value;
+    call('loginTeacher', [password], function (res) {
+      if (res.ok) {
+        state.teacher = res;
+        enterDashboard();
+      }
+    }, 'teacher-auth-msg');
+  }
+
+  function doTeacherSignup() {
+    var name = document.getElementById('signup-name').value;
+    var subject = document.getElementById('signup-subject').value;
+    var password = document.getElementById('signup-password').value;
+    call('signUpTeacher', [name, subject, password], function (res) {
+      if (res.ok) {
+        state.teacher = res;
+        enterDashboard();
+      }
+    }, 'teacher-auth-msg');
+  }
+
+  function logoutTeacher() {
+    state.teacher = null;
+    state.currentSessionId = null;
+    show('view-landing');
+  }
+
+  /* ---------- 선생님 대시보드 ---------- */
+
+  function enterDashboard() {
+    document.getElementById('dash-title').textContent = state.teacher.name + ' 선생님';
+    document.getElementById('dash-sub').textContent = state.teacher.subject + ' 과목';
+    document.getElementById('new-session-box').classList.add('hidden');
+    loadSessionList();
+    show('view-teacher-dashboard');
+  }
+
+  function openNewSession() {
+    document.getElementById('new-session-box').classList.remove('hidden');
+  }
+
+  function createNewSession() {
+    var title = document.getElementById('new-session-title').value;
+    call('createSession', [state.teacher.teacherId, title], function (res) {
+      if (res.ok) {
+        document.getElementById('new-session-title').value = '';
+        document.getElementById('new-session-box').classList.add('hidden');
+        loadSessionList();
+      }
+    }, 'dash-msg');
+  }
+
+  function loadSessionList() {
+    call('getTeacherSessions', [state.teacher.teacherId], function (list) {
+      var el = document.getElementById('session-list');
+      if (!list.length) { el.innerHTML = '<p class="sub">아직 만든 평가가 없습니다.</p>'; return; }
+      el.innerHTML = list.map(function (s) {
+        return '<div class="list-item">' +
+          '<div>' + escapeHtml(s.title) +
+          '<span class="tag ' + s.status + '">' + (s.status === 'open' ? '진행중' : '마감') + '</span>' +
+          '</div>' +
+          '<button class="link-btn" onclick="openSessionEditor(\'' + s.sessionId + '\')">편집</button>' +
+          '</div>';
+      }).join('');
+    });
+  }
+
+  function backToDashboard() {
+    state.currentSessionId = null;
+    enterDashboard();
+  }
+
+  /* ---------- 세션 편집 ---------- */
+
+  function openSessionEditor(sessionId) {
+    state.currentSessionId = sessionId;
+    // [수정 2] teacherId를 함께 보내서 세션 소유자만 조회 가능
+    call('getSessionDetail', [state.teacher.teacherId, sessionId], function (res) {
+      if (!res.ok) return;
+      document.getElementById('editor-title').textContent = res.title;
+      document.getElementById('editor-status-hint').textContent =
+        res.status === 'open'
+          ? '지금 "진행중" 상태예요. 학생 참여 화면 목록에서 이 평가를 고를 수 있습니다.'
+          : '지금 "마감" 상태예요. [평가 열기]를 눌러야 학생 목록에 다시 나타납니다.';
+      document.getElementById('btn-open').disabled = res.status === 'open';
+      document.getElementById('btn-close').disabled = res.status === 'closed';
+      document.getElementById('roster-text').value = '';
+      setMsg('editor-msg', '');
+      state.currentQuestions = res.questions;
+      renderGroupList(res.students);
+      renderQuestionList(res.questions);
+      // [수정 4] 응답이 이미 있으면 문항 편집 잠금 안내 + 버튼 비활성화
+      var locked = !!res.hasResponses;
+      document.getElementById('question-lock-msg').classList.toggle('hidden', !locked);
+      document.getElementById('btn-add-question').disabled = locked;
+      document.getElementById('btn-save-questions').disabled = locked;
+      show('view-session-editor');
+    }, 'editor-msg');
+  }
+
+  function changeStatus(status) {
+    call('setSessionStatus', [state.teacher.teacherId, state.currentSessionId, status], function (res) {
+      if (res.ok) openSessionEditor(state.currentSessionId);
+    }, 'editor-msg');
+  }
+
+  function saveRosterClick() {
+    var text = document.getElementById('roster-text').value;
+    call('saveRoster', [state.teacher.teacherId, state.currentSessionId, text], function (res) {
+      if (res.ok) {
+        setMsg('roster-msg', res.count + '명의 명단이 저장되었습니다.', false);
+        openSessionEditor(state.currentSessionId);
+      }
+    }, 'roster-msg');
+  }
+
+  function renderGroupList(students) {
+    var el = document.getElementById('group-list');
+    if (!students.length) { el.innerHTML = '<p class="sub">먼저 학생 명단을 저장해주세요.</p>'; return; }
+    el.innerHTML = students.map(function (s) {
+      return '<div class="student-row">' +
+        '<span class="name">' + escapeHtml(s.studentId) + ' ' + escapeHtml(s.name) + '</span>' +
+        '<input type="text" style="margin-bottom:0" data-student="' + escapeHtml(s.studentId) + '" value="' + escapeHtml(s.groupName) + '" placeholder="모둠 이름">' +
+        '</div>';
+    }).join('');
+  }
+
+  function saveGroupsClick() {
+    var inputs = document.querySelectorAll('#group-list input[data-student]');
+    var assignments = [];
+    inputs.forEach(function (inp) {
+      assignments.push({ studentId: inp.getAttribute('data-student'), groupName: inp.value.trim() });
+    });
+    call('saveGroups', [state.teacher.teacherId, state.currentSessionId, assignments], function (res) {
+      if (res.ok) setMsg('group-msg', '모둠 정보가 저장되었습니다.', false);
+    }, 'group-msg');
+  }
+
+  function renderQuestionList(questions) {
+    state.currentQuestions = questions.length ? questions : [{ text: '', type: 'score' }];
+    drawQuestionRows();
+  }
+
+  function drawQuestionRows() {
+    var el = document.getElementById('question-list');
+    el.innerHTML = state.currentQuestions.map(function (q, i) {
+      return '<div class="q-row">' +
+        '<input type="text" value="' + escapeHtml(q.text) + '" placeholder="문항 내용 (예: 역할을 성실히 수행했나요?)" oninput="updateQuestionText(' + i + ', this.value)">' +
+        '<div class="row">' +
+          '<select onchange="updateQuestionType(' + i + ', this.value)">' +
+            '<option value="score" ' + (q.type !== 'text' ? 'selected' : '') + '>점수형 (1~5점)</option>' +
+            '<option value="text" ' + (q.type === 'text' ? 'selected' : '') + '>서술형 (글로 답변)</option>' +
+          '</select>' +
+          '<button class="secondary" style="flex:0 0 auto" onclick="removeQuestionRow(' + i + ')">삭제</button>' +
+        '</div>' +
+        '</div>';
+    }).join('');
+  }
+
+  function updateQuestionText(i, val) { state.currentQuestions[i].text = val; }
+  function updateQuestionType(i, val) { state.currentQuestions[i].type = val; }
+  function addQuestionRow() { state.currentQuestions.push({ text: '', type: 'score' }); drawQuestionRows(); }
+  function removeQuestionRow(i) { state.currentQuestions.splice(i, 1); drawQuestionRows(); }
+
+  function saveQuestionsClick() {
+    call('saveQuestions', [state.teacher.teacherId, state.currentSessionId, state.currentQuestions], function (res) {
+      if (res.ok) setMsg('question-msg', '문항이 저장되었습니다.', false);
+    }, 'question-msg');
+  }
+
+  /* ---------- 결과 보기 ---------- */
+
+  function viewResults() {
+    var container = document.getElementById('results-table');
+    document.getElementById('results-title').textContent =
+      document.getElementById('editor-title').textContent + ' - 결과';
+    container.innerHTML = '<p class="sub">결과를 불러오는 중...</p>';
+    show('view-results');
+    google.script.run
+      .withSuccessHandler(function (res) {
+        if (!res || !res.ok) {
+          container.innerHTML = '<div class="msg error">결과를 불러오지 못했습니다: ' +
+            escapeHtml((res && res.message) || '알 수 없는 오류') + '</div>';
+          return;
+        }
+        renderResults(res, container);
+      })
+      .withFailureHandler(function (err) {
+        container.innerHTML = '<div class="msg error">서버 오류: ' + escapeHtml(err.message) + '</div>';
+      })
+      .getSessionResults(state.teacher.teacherId, state.currentSessionId);
+  }
+
+  function renderResults(res, container) {
+    state.lastResults = res;
+    if (!res.results.length) {
+      container.innerHTML = '<div class="msg error">등록된 학생이 없습니다. 먼저 학생 명단을 저장해주세요.</div>';
+      return;
+    }
+    var totalResponses = res.results.reduce(function (a, r) { return a + r.receivedCount; }, 0);
+    var scoreQs = res.questions.map(function (q, i) { return { q: q, i: i }; }).filter(function (x) { return x.q.type === 'score'; });
+    var hasText = res.hasText;
+    var html = '';
+    if (totalResponses === 0) {
+      html += '<div class="msg error">아직 제출된 동료평가가 없습니다. 학생들이 평가를 제출하면 여기에 표시됩니다.</div>';
+    }
+    html += '<table><thead><tr><th>학생</th><th>모둠</th><th>받은 평가 수</th><th>적은 평가 수</th>';
+    scoreQs.forEach(function (x) { html += '<th>' + escapeHtml(x.q.text) + ' 평균</th>'; });
+    if (hasText) { html += '<th>받은 글자수</th><th>적은 글자수</th><th>서술형 답변</th>'; }
+    html += '</tr></thead><tbody>';
+    res.results.forEach(function (r) {
+      html += '<tr><td>' + escapeHtml(r.studentId) + ' ' + escapeHtml(r.name) + '</td>' +
+        '<td>' + escapeHtml(r.groupName || '-') + '</td>' +
+        '<td>' + r.receivedCount + '</td>' +
+        '<td>' + r.givenCount + '</td>';
+      scoreQs.forEach(function (x) {
+        var avg = r.scoreAverages[x.i];
+        html += '<td>' + (avg === null || avg === undefined ? '-' : avg) + '</td>';
+      });
+      if (hasText) {
+        html += '<td>' + r.receivedChars + '</td>' +
+          '<td>' + r.writtenChars + '</td>' +
+          '<td>' + (r.comments.length ? r.comments.map(escapeHtml).join('<br>') : '-') + '</td>';
+      }
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    container.innerHTML = html;
+  }
+
+  function backToEditor() {
+    openSessionEditor(state.currentSessionId);
+  }
+
+  function exportToExcel() {
+    var res = state.lastResults;
+    if (!res || !res.results || !res.results.length) {
+      alert('내보낼 결과가 없습니다.');
+      return;
+    }
+    if (typeof XLSX === 'undefined') {
+      alert('엑셀 기능을 불러오지 못했습니다. 인터넷 연결을 확인하고 새로고침해주세요.');
+      return;
+    }
+    var title = document.getElementById('editor-title').textContent || '동료평가';
+    var scoreQs = res.questions.map(function (q, i) { return { q: q, i: i }; }).filter(function (x) { return x.q.type === 'score'; });
+    var hasText = res.hasText;
+
+    var header = ['학번·이름', '모둠', '받은 평가 수', '적은 평가 수'];
+    scoreQs.forEach(function (x) { header.push(x.q.text + ' 평균'); });
+    if (hasText) { header.push('받은 글자수', '적은 글자수', '서술형 답변'); }
+
+    var aoa = [];
+    aoa.push(['동료평가 결과: ' + title]);
+    aoa.push(['내보낸 날짜: ' + new Date().toLocaleString()]);
+    aoa.push([]);
+    aoa.push(header);
+
+    res.results.forEach(function (r) {
+      var row = [r.studentId + ' ' + r.name, r.groupName || '', r.receivedCount, r.givenCount];
+      scoreQs.forEach(function (x) {
+        var avg = r.scoreAverages[x.i];
+        row.push(avg === null || avg === undefined ? '' : avg);
+      });
+      if (hasText) { row.push(r.receivedChars, r.writtenChars, r.comments.join('\n')); }
+      aoa.push(row);
+    });
+
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    var widths = [{ wch: 14 }, { wch: 10 }, { wch: 11 }, { wch: 11 }];
+    scoreQs.forEach(function () { widths.push({ wch: 14 }); });
+    if (hasText) { widths.push({ wch: 10 }, { wch: 10 }, { wch: 40 }); }
+    ws['!cols'] = widths;
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '결과');
+    var safeTitle = title.replace(/[\\/:*?"<>|\[\]]/g, '_');
+    XLSX.writeFile(wb, '동료평가_' + safeTitle + '_결과.xlsx');
+  }
+
+  /* ---------- 학생 로그인 ---------- */
+
+  function openStudentLogin() {
+    document.getElementById('student-id').value = '';
+    document.getElementById('student-name').value = '';
+    document.getElementById('my-session-list').innerHTML = '';
+    setMsg('student-login-msg', '');
+    show('view-student-login');
+  }
+
+  function findMySessions() {
+    var id = document.getElementById('student-id').value;
+    var name = document.getElementById('student-name').value;
+    var listEl = document.getElementById('my-session-list');
+    listEl.innerHTML = '';
+    setMsg('student-login-msg', '');
+    call('getMyAssignedSessions', [id, name], function (res) {
+      if (!res.ok) return;
+      if (!res.sessions.length) {
+        listEl.innerHTML = '<div class="msg error">지금 참여할 수 있는 평가가 없습니다. (아직 열리지 않았거나 마감된 평가일 수 있어요. 선생님께 확인해주세요.)</div>';
+        return;
+      }
+      listEl.innerHTML = '<p class="sub">참여할 평가를 선택하세요.</p>' + res.sessions.map(function (s) {
+        var extra = s.teacherName ? ' (' + s.teacherName + (s.subject ? ' · ' + s.subject : '') + ')' : '';
+        return '<div class="member-card" onclick="pickSession(\'' + escapeHtml(s.sessionId) + '\')">' +
+          '<span>' + escapeHtml(s.title + extra) + '</span><span>▶</span></div>';
+      }).join('');
+    }, 'student-login-msg');
+  }
+
+  function pickSession(sessionId) {
+    var id = document.getElementById('student-id').value;
+    var name = document.getElementById('student-name').value;
+    call('loginStudent', [sessionId, id, name], function (res) {
+      if (res.ok) {
+        state.student = res;
+        enterStudentEval();
+      }
+    }, 'student-login-msg');
+  }
+
+  function logoutStudent() {
+    state.student = null;
+    show('view-landing');
+  }
+
+  function enterStudentEval() {
+    document.getElementById('eval-title').textContent = state.student.title;
+    document.getElementById('eval-sub').textContent =
+      state.student.name + ' (' + state.student.studentId + ')' + (state.student.groupName ? ' · ' + state.student.groupName : '');
+    document.getElementById('eval-form-card').classList.add('hidden');
+    loadGroupMembers();
+    show('view-student-eval');
+  }
+
+  function loadGroupMembers() {
+    call('getGroupMembers', [state.student.sessionId, state.student.studentId], function (res) {
+      if (!res.ok) return;
+      var noGroup = document.getElementById('no-group-msg');
+      var listEl = document.getElementById('member-list');
+      if (!res.groupName) {
+        noGroup.classList.remove('hidden');
+        listEl.innerHTML = '';
+        return;
+      }
+      noGroup.classList.add('hidden');
+      if (!res.members.length) {
+        listEl.innerHTML = '<p class="sub">같은 모둠원이 없습니다.</p>';
+        return;
+      }
+      listEl.innerHTML = res.members.map(function (m) {
+        return '<div class="member-card" onclick="openEvalForm(\'' + m.studentId + '\', \'' + escapeHtml(m.name).replace(/'/g, "\\'") + '\')">' +
+          '<span>' + escapeHtml(m.studentId) + ' ' + escapeHtml(m.name) + '</span>' +
+          '<span class="' + (m.submitted ? 'done' : 'pending') + '">' + (m.submitted ? '제출완료 (수정 가능)' : '미제출') + '</span>' +
+          '</div>';
+      }).join('');
+    });
+  }
+
+  function openEvalForm(targetId, targetName) {
+    state.evalTargetId = targetId;
+    document.getElementById('eval-form-target').textContent = targetName + ' 평가하기';
+    var questions = state.student.questions;
+    document.getElementById('eval-form-questions').innerHTML = questions.map(function (q, i) {
+      if (q.type === 'text') {
+        return '<label>' + escapeHtml(q.text) + '</label><textarea data-qi="' + i + '" data-type="text"></textarea>';
+      }
+      var options = [1, 2, 3, 4, 5].map(function (n) {
+        return '<label><input type="radio" name="q' + i + '" value="' + n + '" onclick="markChecked(this)"><span>' + n + '</span></label>';
+      }).join('');
+      return '<label>' + escapeHtml(q.text) + '</label><div class="score-options" data-qi="' + i + '" data-type="score">' + options + '</div>';
+    }).join('');
+    setMsg('eval-form-msg', '');
+    document.getElementById('eval-form-card').classList.remove('hidden');
+    document.getElementById('eval-form-card').scrollIntoView({ behavior: 'smooth' });
+  }
+
+  function markChecked(input) {
+    var group = input.closest('.score-options');
+    group.querySelectorAll('label').forEach(function (l) { l.classList.remove('checked'); });
+    input.closest('label').classList.add('checked');
+  }
+
+  function closeEvalForm() {
+    document.getElementById('eval-form-card').classList.add('hidden');
+  }
+
+  function submitEvalClick() {
+    var questions = state.student.questions;
+    var answers = questions.map(function (q, i) {
+      if (q.type === 'text') {
+        var ta = document.querySelector('textarea[data-qi="' + i + '"]');
+        return ta ? ta.value.trim() : '';
+      }
+      var checked = document.querySelector('input[name="q' + i + '"]:checked');
+      return checked ? checked.value : '';
+    });
+    var missing = questions.some(function (q, i) { return q.type === 'score' && !answers[i]; });
+    if (missing) {
+      setMsg('eval-form-msg', '점수형 문항에 모두 응답해주세요.', true);
+      return;
+    }
+    call('submitEvaluation', [state.student.sessionId, state.student.studentId, state.evalTargetId, answers], function (res) {
+      if (res.ok) {
+        closeEvalForm();
+        loadGroupMembers();
+      }
+    }, 'eval-form-msg');
+  }
+</script>
+</body>
+</html>
